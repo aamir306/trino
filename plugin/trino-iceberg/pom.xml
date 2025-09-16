@@ -407,6 +407,13 @@
         </dependency>
 
         <dependency>
+            <groupId>com.google.cloud.gcs.analytics</groupId>
+            <artifactId>gcs-analytics-core</artifactId>
+            <version>1.2.1</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>http-client</artifactId>
             <scope>runtime</scope>
@@ -463,6 +470,13 @@
         <dependency>
             <groupId>org.apache.httpcomponents.core5</groupId>
             <artifactId>httpcore5</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.iceberg</groupId>
+            <artifactId>iceberg-azure-bundle</artifactId>
+            <version>${dep.iceberg.version}</version>
             <scope>runtime</scope>
         </dependency>
 
