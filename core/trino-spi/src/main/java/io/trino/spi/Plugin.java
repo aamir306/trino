@@ -18,6 +18,7 @@ import io.trino.spi.catalog.CatalogStoreFactory;
 import io.trino.spi.connector.ConnectorFactory;
 import io.trino.spi.eventlistener.EventListenerFactory;
 import io.trino.spi.exchange.ExchangeManagerFactory;
+import io.trino.spi.filesystem.TrinoFileSystemFactory;
 import io.trino.spi.function.LanguageFunctionEngine;
 import io.trino.spi.resourcegroups.ResourceGroupConfigurationManagerFactory;
 import io.trino.spi.security.CertificateAuthenticatorFactory;
@@ -118,6 +119,29 @@ public interface Plugin
     }
 
     default Iterable<SpoolingManagerFactory> getSpoolingManagerFactories()
+    {
+        return emptyList();
+    }
+
+    /**
+     * File system factories supplied by this plugin. The engine registers each returned
+     * factory under its {@link TrinoFileSystemFactory#getName() name} (URI scheme) and
+     * routes matching paths through it.
+     *
+     * <p>Use cases:
+     * <ul>
+     *   <li>External blob caches that interpose on file reads (e.g. shelf, an OSS
+     *       Iceberg-native cache; Alluxio in a forthcoming refactor).
+     *   <li>Custom storage backends not covered by the built-in S3/GCS/Azure factories.
+     * </ul>
+     *
+     * <p>Plugin-supplied factories are layered on top of the built-in factories; a
+     * plugin returning a factory with name {@code "s3"} will collide with the built-in
+     * S3 binding at registration time.
+     *
+     * @see io.trino.spi.filesystem.TrinoFileSystemFactory
+     */
+    default Iterable<TrinoFileSystemFactory> getFileSystemFactories()
     {
         return emptyList();
     }

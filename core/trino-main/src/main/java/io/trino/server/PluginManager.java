@@ -22,6 +22,7 @@ import io.trino.connector.CatalogStoreManager;
 import io.trino.eventlistener.EventListenerManager;
 import io.trino.exchange.ExchangeManagerRegistry;
 import io.trino.execution.resourcegroups.ResourceGroupManager;
+import io.trino.filesystem.manager.FileSystemFactoryRegistry;
 import io.trino.metadata.BlockEncodingManager;
 import io.trino.metadata.GlobalFunctionCatalog;
 import io.trino.metadata.HandleResolver;
@@ -42,6 +43,7 @@ import io.trino.spi.classloader.ThreadContextClassLoader;
 import io.trino.spi.connector.ConnectorFactory;
 import io.trino.spi.eventlistener.EventListenerFactory;
 import io.trino.spi.exchange.ExchangeManagerFactory;
+import io.trino.spi.filesystem.TrinoFileSystemFactory;
 import io.trino.spi.function.LanguageFunctionEngine;
 import io.trino.spi.resourcegroups.ResourceGroupConfigurationManagerFactory;
 import io.trino.spi.security.CertificateAuthenticatorFactory;
@@ -94,6 +96,7 @@ public class PluginManager
     private final GroupProviderManager groupProviderManager;
     private final ExchangeManagerRegistry exchangeManagerRegistry;
     private final SpoolingManagerRegistry spoolingManagerRegistry;
+    private final FileSystemFactoryRegistry fileSystemFactoryRegistry;
     private final SessionPropertyDefaults sessionPropertyDefaults;
     private final TypeRegistry typeRegistry;
     private final BlockEncodingManager blockEncodingManager;
@@ -119,7 +122,8 @@ public class PluginManager
             BlockEncodingManager blockEncodingManager,
             HandleResolver handleResolver,
             ExchangeManagerRegistry exchangeManagerRegistry,
-            SpoolingManagerRegistry spoolingManagerRegistry)
+            SpoolingManagerRegistry spoolingManagerRegistry,
+            FileSystemFactoryRegistry fileSystemFactoryRegistry)
     {
         this.pluginsProvider = requireNonNull(pluginsProvider, "pluginsProvider is null");
         this.catalogStoreManager = requireNonNull(catalogStoreManager, "catalogStoreManager is null");
@@ -139,6 +143,7 @@ public class PluginManager
         this.handleResolver = requireNonNull(handleResolver, "handleResolver is null");
         this.exchangeManagerRegistry = requireNonNull(exchangeManagerRegistry, "exchangeManagerRegistry is null");
         this.spoolingManagerRegistry = requireNonNull(spoolingManagerRegistry, "spoolingManagerRegistry is null");
+        this.fileSystemFactoryRegistry = requireNonNull(fileSystemFactoryRegistry, "fileSystemFactoryRegistry is null");
     }
 
     @Override
@@ -285,6 +290,20 @@ public class PluginManager
         for (SpoolingManagerFactory spoolingManagerFactory : plugin.getSpoolingManagerFactories()) {
             log.info("Registering spooling manager %s", spoolingManagerFactory.getName());
             spoolingManagerRegistry.addSpoolingManagerFactory(spoolingManagerFactory);
+        }
+
+        for (TrinoFileSystemFactory fileSystemFactory : plugin.getFileSystemFactories()) {
+            log.info("Registering file system factory %s for scheme '%s'",
+                    fileSystemFactory.getClass().getName(), fileSystemFactory.getName());
+            // Plugins SHOULD return concrete instances of io.trino.filesystem.TrinoFileSystemFactory
+            // (the engine-internal subtype with TrinoFileSystem-typed create()). The downcast here
+            // happens at registration time so the plugin classloader boundary stays clean.
+            if (!(fileSystemFactory instanceof io.trino.filesystem.TrinoFileSystemFactory engineFactory)) {
+                throw new IllegalStateException(
+                        "Plugin-supplied file system factory must implement io.trino.filesystem.TrinoFileSystemFactory: "
+                                + fileSystemFactory.getClass().getName());
+            }
+            fileSystemFactoryRegistry.addFactory(engineFactory);
         }
     }
 

@@ -17,11 +17,27 @@ import io.trino.spi.connector.ConnectorSession;
 import io.trino.spi.security.ConnectorIdentity;
 
 public interface TrinoFileSystemFactory
+        extends io.trino.spi.filesystem.TrinoFileSystemFactory
 {
+    @Override
     TrinoFileSystem create(ConnectorIdentity identity);
 
+    @Override
     default TrinoFileSystem create(ConnectorSession session)
     {
         return create(session.getIdentity());
+    }
+
+    /**
+     * Default name uses the implementation class simple name. Engine-internal factories
+     * (S3, GCS, Azure, ...) are still registered by URI scheme via Guice binding in
+     * {@code FileSystemModule} and do not rely on this default. Plugin-supplied
+     * factories returned from {@link io.trino.spi.Plugin#getFileSystemFactories()}
+     * SHOULD override this with their stable URI scheme.
+     */
+    @Override
+    default String getName()
+    {
+        return getClass().getSimpleName();
     }
 }

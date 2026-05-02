@@ -439,6 +439,10 @@ public class ServerMainModule
                 .to(ServerPluginsProvider.class).in(Scopes.SINGLETON);
         configBinder(binder).bindConfig(ServerPluginsProviderConfig.class);
 
+        // engine-wide registry of plugin-supplied file system factories
+        // (built-in S3/GCS/Azure factories are bound separately in FileSystemModule)
+        binder.bind(io.trino.filesystem.manager.FileSystemFactoryRegistry.class).in(Scopes.SINGLETON);
+
         // SIMD support
         binder.bind(BlockEncodingSimdSupport.class).in(Scopes.SINGLETON);
 
